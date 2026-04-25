@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Amaterest icon</title>
+  <desc id="desc">A clean monogram A for Amaterest.</desc>
+  <rect width="512" height="512" rx="112" fill="#c9d9a2"/>
+  <circle cx="256" cy="256" r="184" fill="#fbfaf7" opacity="0.34"/>
+  <path
+    d="M151 371 237 136h42l86 235h-45l-18-54h-89l-18 54h-44Zm74-91h65l-32-96-33 96Z"
+    fill="#171512"
+  />
+</svg>
