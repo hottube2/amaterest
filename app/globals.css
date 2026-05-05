@@ -762,6 +762,83 @@ a {
   word-break: break-all;
 }
 
+.ops-dashboard-grid {
+  align-items: start;
+}
+
+.ops-summary-grid {
+  margin-top: 14px;
+}
+
+.ops-table-card {
+  min-width: 0;
+}
+
+.ops-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ops-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ops-table th,
+.ops-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ops-table th {
+  color: var(--accent-dark);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ops-table td span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.ops-checklist {
+  margin-bottom: 18px;
+}
+
+.ops-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ops-checklist-item {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fcfbf8;
+}
+
+.ops-checklist-item .status-pill {
+  justify-self: start;
+}
+
+.ops-checklist-item strong {
+  font-size: 16px;
+}
+
+.ops-checklist-item span:last-child {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
@@ -780,7 +857,8 @@ a {
 
   .launch-grid,
   .launch-summary-grid,
-  .schedule-report-grid {
+  .schedule-report-grid,
+  .ops-checklist-grid {
     grid-template-columns: 1fr;
   }
 

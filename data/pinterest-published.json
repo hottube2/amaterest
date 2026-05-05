@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "updatedAt": "2026-05-03T19:41:40.389Z",
+  "items": [
+    {
+      "internalPinId": "lib-under_sink_yamazaki_pullout_01-before-after",
+      "productKey": "under_sink_yamazaki_pullout_01",
+      "boardId": "1132303600003950351",
+      "title": "Avant / Après: Under-Sink Pull-Out Organizer",
+      "description": "Avant/après ultra visuel avec Under-Sink Pull-Out Organizer. sliding access under the sink. Voir le produit sur Amazon.",
+      "link": "https://amzn.to/4sYGZP7",
+      "affiliateUrl": "https://amzn.to/4sYGZP7",
+      "imageUrl": "https://amaterest.pages.dev/pinterest-launch/pin-07.jpg",
+      "imageAssetPath": "/pinterest-launch/pin-07.jpg",
+      "publishedAt": "2026-05-03T19:41:40.387Z",
+      "publishMode": "canary",
+      "warnings": [],
+      "usesPublicBaseUrl": true,
+      "publicBaseUrl": "https://amaterest.pages.dev",
+      "result": "blocked",
+      "validationOk": true,
+      "canPublishLive": false,
+      "blockers": [],
+      "liveBlockers": [
+        "publish_disabled"
+      ],
+      "errorMessage": "publish_disabled: PINTEREST_ENABLE_PUBLISH=false. Canary publish refused before calling Pinterest."
+    },
+    {
+      "internalPinId": "lib-under_sink_yamazaki_pullout_01-before-after",
+      "productKey": "under_sink_yamazaki_pullout_01",
+      "boardId": "1132303600003950351",
+      "title": "Avant / Après: Shoe Bench with Storage",
+      "description": "Avant/après ultra visuel avec Shoe Bench with Storage. entryway reset zone. Voir le produit sur Amazon.",
+      "link": "https://amzn.to/4sYGZP7",
+      "imageUrl": "http://localhost:3301/pinterest-launch/pin-07.jpg",
+      "publishedAt": "2026-05-03T19:27:37.015Z",
+      "publishMode": "canary",
+      "result": "blocked",
+      "errorMessage": "publish_disabled: PINTEREST_ENABLE_PUBLISH=false. Canary publish refused before calling Pinterest."
+    },
+    {
+      "internalPinId": "lib-under_sink_yamazaki_pullout_01-before-after",
+      "productKey": "under_sink_yamazaki_pullout_01",
+      "boardId": "1132303600003950351",
+      "title": "Avant / Après: Shoe Bench with Storage",
+      "description": "Avant/après ultra visuel avec Shoe Bench with Storage. entryway reset zone. Voir le produit sur Amazon.",
+      "link": "https://amzn.to/4sYGZP7",
+      "imageUrl": "http://localhost:3301/pinterest-launch/pin-07.jpg",
+      "publishedAt": "2026-05-03T19:25:15.758Z",
+      "publishMode": "canary",
+      "result": "blocked",
+      "errorMessage": "publish_disabled: PINTEREST_ENABLE_PUBLISH=false. Canary publish refused before calling Pinterest."
+    },
+    {
+      "internalPinId": "lib-under_sink_yamazaki_pullout_01-before-after",
+      "productKey": "under_sink_yamazaki_pullout_01",
+      "boardId": "1132303600003950351",
+      "title": "Avant / Après: Shoe Bench with Storage",
+      "description": "Avant/après ultra visuel avec Shoe Bench with Storage. entryway reset zone. Voir le produit sur Amazon.",
+      "link": "https://amzn.to/4sYGZP7",
+      "imageUrl": "http://localhost:3301/pinterest-launch/pin-07.jpg",
+      "publishedAt": "2026-05-03T19:22:32.514Z",
+      "publishMode": "canary",
+      "result": "blocked",
+      "errorMessage": "publish_disabled: PINTEREST_ENABLE_PUBLISH=false. Canary publish refused before calling Pinterest."
+    },
+    {
+      "internalPinId": "lib-under_sink_yamazaki_pullout_01-before-after",
+      "productKey": "under_sink_yamazaki_pullout_01",
+      "boardId": "1132303600003950351",
+      "title": "Avant / Après: Shoe Bench with Storage",
+      "description": "Avant/après ultra visuel avec Shoe Bench with Storage. entryway reset zone. Voir le produit sur Amazon.",
+      "link": "https://amzn.to/4sYGZP7",
+      "imageUrl": "http://localhost:3301/pinterest-launch/pin-07.jpg",
+      "publishedAt": "2026-05-01T16:00:07.880Z",
+      "publishMode": "canary",
+      "result": "blocked",
+      "errorMessage": "publish_disabled: PINTEREST_ENABLE_PUBLISH=false. Canary publish refused before calling Pinterest."
+    }
+  ]
+}

@@ -71,7 +71,7 @@ function getPinterestErrorMessage(data: unknown, status: number, path: string) {
   return `Pinterest API request failed for ${path} with status ${status}.`;
 }
 
-async function pinterestFetch<T>(path: string, { accessToken, ...init }: PinterestFetchOptions = {}) {
+export async function pinterestFetch<T>(path: string, { accessToken, ...init }: PinterestFetchOptions = {}) {
   const method = init.method || "GET";
   const response = await fetch(`${PINTEREST_API_BASE_URL}${path}`, {
     ...init,
@@ -140,4 +140,44 @@ export async function createPin(
       }
     })
   });
+}
+
+export type PinterestPinAnalyticsResponse = Record<string, unknown>;
+
+export async function getPinAnalytics(
+  {
+    adAccountId,
+    pinIds,
+    startDate,
+    endDate,
+    metricTypes = ["IMPRESSION", "OUTBOUND_CLICK", "PIN_CLICK", "SAVE"]
+  }: {
+    adAccountId: string;
+    pinIds: string[];
+    startDate: string;
+    endDate: string;
+    metricTypes?: string[];
+  },
+  accessToken?: string
+) {
+  const query = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+    granularity: "TOTAL"
+  });
+
+  for (const pinId of pinIds) {
+    query.append("pin_ids", pinId);
+  }
+
+  for (const metricType of metricTypes) {
+    query.append("columns", metricType);
+  }
+
+  return pinterestFetch<PinterestPinAnalyticsResponse>(
+    `/ad_accounts/${encodeURIComponent(adAccountId)}/pins/analytics?${query.toString()}`,
+    {
+      accessToken
+    }
+  );
 }

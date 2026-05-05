@@ -120,6 +120,15 @@ Pour les visuels des 10 pins :
 - si une image dediee manque, l'app utilise automatiquement un fallback
 - l'UI de `/pinterest-launch` affiche clairement `local image`, `fallback image` ou `test image`
 
+Checklist avant canary publish reel :
+
+- deployer la derniere version sur Cloudflare Pages
+- verifier en local que `http://localhost:3301/pinterest-launch/pin-01.jpg` repond avec `Content-Type: image/jpeg`
+- verifier que `https://amaterest.pages.dev/pinterest-launch/pin-01.jpg` affiche directement l'image
+- verifier que l'URL publique repond avec `Content-Type: image/jpeg`
+- ne pas publier tant qu'une URL `/pinterest-launch/pin-*.jpg` publique renvoie la homepage ou du HTML
+- garder `PINTEREST_PUBLIC_BASE_URL=https://amaterest.pages.dev` pour les URLs image destinees a Pinterest
+
 ## Tester les routes Pinterest
 
 Boards :
@@ -169,6 +178,56 @@ Cette page permet de :
 - forcer `Dry-run due now`
 - garder `Publish due now` visible mais securise
 
+## Pinterest Library (Phase 2)
+
+Ouvrir aussi :
+
+```text
+http://localhost:3301/pinterest-library
+```
+
+Cette page ajoute un content engine local :
+
+- 20 produits premium centralises
+- 3 angles par produit (60 pins de base)
+- scoring `overallScore /100` avec tier `A/B/C`
+- suivi performance local (impressions, clicks, saves, winner)
+- export JSON/CSV
+- envoi de pins selectionnees vers le scheduler existant
+
+Routes library :
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/library/list
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/library/export?format=json
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/library/export?format=csv
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/library/send-to-scheduler -ContentType 'application/json' -Body '{\"pinIds\":[\"lib-pantry_airtight_01-before-after\"]}'
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/library/performance -ContentType 'application/json' -Body '{\"pinId\":\"lib-pantry_airtight_01-before-after\",\"winningPin\":true}'
+```
+
+## Pinterest Ops (Phase 3)
+
+Ouvrir aussi :
+
+```text
+http://localhost:3301/pinterest-ops
+```
+
+Routes ops + monetization :
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/ops/summary
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/ops/run-qa
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/ops/fill-30-days
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/ops/generate-winner-variants
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/ops/send-ready-to-scheduler
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/ops/run-cycle
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/ops/export?format=json
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/ops/export?format=csv
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/monetization/affiliate-url -ContentType 'application/json' -Body '{\"productKey\":\"pantry_airtight_01\",\"amazonAffiliateUrl\":\"https://amzn.to/xxx\"}'
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/monetization/affiliate-url/bulk -ContentType 'application/json' -Body '{\"format\":\"csv\",\"payload\":\"productKey,amazonAffiliateUrl\\npantry_airtight_01,https://amzn.to/xxx\"}'
+```
+
 Variables utiles pour le scheduler :
 
 - `PINTEREST_ENABLE_PUBLISH=false`
@@ -185,6 +244,67 @@ Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/schedule
 Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/schedule/dry-run-due -ContentType 'application/json' -Body '{}'
 Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/schedule/publish-due -ContentType 'application/json' -Body '{}'
 ```
+
+## Pinterest Ops / Phase 5 Live
+
+Ouvrir :
+
+```text
+http://localhost:3301/pinterest-ops
+```
+
+Cette page ajoute le centre de controle live :
+
+- `Canary publish 1 pin` publie une seule pin reelle, seulement si `PINTEREST_ENABLE_PUBLISH=true`
+- `Sync analytics` recupere les metriques des pins deja publiees
+- `Recently published`, `Top performers`, `Needs review` et `Confirmed winners` donnent la revue quotidienne
+
+Variables utiles :
+
+- `PINTEREST_ENABLE_PUBLISH=false`
+- `PINTEREST_CANARY_BOARD_ID=`
+- `PINTEREST_ANALYTICS_LOOKBACK_DAYS=30`
+- `PINTEREST_LIVE_PUBLISH_LIMIT=1`
+- `PINTEREST_AD_ACCOUNT_ID=` requis pour l'endpoint Pinterest analytics pins
+
+Routes live :
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/publish/canary -ContentType 'application/json' -Body '{"boardId":"<board_id>"}'
+Invoke-RestMethod -Uri http://localhost:3301/api/pinterest/analytics/list
+Invoke-RestMethod -Method Post -Uri http://localhost:3301/api/pinterest/analytics/sync -ContentType 'application/json' -Body '{}'
+```
+
+Le fichier local `data/pinterest-published.json` garde l'historique des publications reelles :
+
+- `internalPinId`
+- `pinterestPinId`
+- `productKey`
+- `boardId`
+- `title`
+- `description`
+- `link`
+- `imageUrl`
+- `publishedAt`
+- `publishMode`
+- `result`
+- `errorMessage`
+
+Regles winner :
+
+- `winnerCandidate` apres un minimum de volume et premiers signaux
+- `confirmedWinner` seulement apres plus de volume et au moins 2 jours live
+- `generateVariantsReady=true` uniquement quand `confirmedWinner=true`
+
+Checklist readiness integree dans `/pinterest-ops` :
+
+- website claimed
+- Amazon Storefront linked, si utilise
+- board live pret
+- publish enabled
+- write scopes actifs
+- canary publish valide
+- analytics sync valide
 
 ## Notes
 

@@ -31,8 +31,8 @@ export type PinterestScheduleItem = {
   id: string;
   pinId: string;
   pinNumber: number;
-  productKey: PreparedPinterestLaunchPin["productKey"];
-  relatedProductKeys?: PreparedPinterestLaunchPin["relatedProductKeys"];
+  productKey: string;
+  relatedProductKeys?: string[];
   category: PreparedPinterestLaunchPin["category"];
   internalTitle: string;
   title: string;
@@ -122,6 +122,7 @@ export type PinterestScheduleDashboard = {
   message?: string;
   filledCount?: number;
   clearedCount?: number;
+  replacedCount?: number;
 };
 
 type RunOptions = {
@@ -133,6 +134,11 @@ type RunOptions = {
 
 type FillOptions = {
   origin?: string;
+  days?: number;
+};
+
+type AddItemsOptions = {
+  items: PinterestScheduleItem[];
   days?: number;
 };
 
@@ -226,7 +232,13 @@ function cleanDateString(value?: string) {
 }
 
 function resolveScheduleBoardId(explicitBoardId?: string) {
-  return env.PINTEREST_LAUNCH_BOARD_ID || env.PINTEREST_TEST_BOARD_ID || explicitBoardId || "";
+  return (
+    env.PINTEREST_LAUNCH_BOARD_ID ||
+    env.PINTEREST_LIBRARY_DEFAULT_BOARD_ID ||
+    env.PINTEREST_TEST_BOARD_ID ||
+    explicitBoardId ||
+    ""
+  );
 }
 
 function hasRequiredQueueFields(item: Pick<PinterestScheduleItem, "boardId" | "link">) {
@@ -418,6 +430,15 @@ function sortQueue(queue: PinterestScheduleItem[]) {
 
 async function syncQueue(origin?: string) {
   const store = await readStore();
+  const storedItems = store.items.map((item) => normalizeQueueItem(item));
+
+  if (storedItems.some((item) => item.pinId.startsWith("lib-"))) {
+    const sortedStoredQueue = sortQueue(storedItems);
+    await writeStore(sortedStoredQueue);
+
+    return sortedStoredQueue;
+  }
+
   const storedMap = new Map(store.items.map((item) => [item.id, item]));
   const queue: PinterestScheduleItem[] = getPreparedPinterestLaunchPins(origin).map((pin): PinterestScheduleItem => {
     const baseItem = createQueueItemFromPin(pin);
@@ -439,6 +460,9 @@ async function syncQueue(origin?: string) {
 
     return normalizeQueueItem(mergedItem);
   });
+  const launchIds = new Set(queue.map((item) => item.id));
+  const libraryItems = store.items.filter((item) => !launchIds.has(item.id)).map((item) => normalizeQueueItem(item));
+  queue.push(...libraryItems);
   const sortedQueue = sortQueue(queue);
 
   await writeStore(sortedQueue);
@@ -662,6 +686,105 @@ export async function clearPinterestSchedule(origin?: string) {
   return {
     ...buildDashboard(nextQueue, undefined, clearedCount > 0 ? `${clearedCount} scheduled pins cleared.` : "No scheduled pins needed to be cleared."),
     clearedCount
+  } satisfies PinterestScheduleDashboard;
+}
+
+export async function addItemsToPinterestSchedule({ items, days = 7 }: AddItemsOptions) {
+  const queue = await syncQueue();
+  const queueMap = new Map(queue.map((item) => [item.id, item]));
+  let addedCount = 0;
+
+  for (const item of items) {
+    const existingItem = queueMap.get(item.id);
+
+    if (existingItem) {
+      const refreshedItem = normalizeQueueItem({
+        ...existingItem,
+        title: item.title,
+        description: item.description,
+        imageUrl: item.imageUrl,
+        imageAssetPath: item.imageAssetPath,
+        imageSourceType: item.imageSourceType,
+        isFallback: item.isFallback,
+        link: item.link,
+        boardId: resolveScheduleBoardId(item.boardId),
+        mode: getDefaultScheduleMode(),
+        status: existingItem.publishedAt || existingItem.scheduledAt ? existingItem.status : hasRequiredQueueFields(item) ? "ready" : "draft",
+        errorMessage: existingItem.publishedAt || existingItem.scheduledAt ? existingItem.errorMessage : undefined,
+        lastAttemptAt: existingItem.publishedAt || existingItem.scheduledAt ? existingItem.lastAttemptAt : undefined
+      });
+      Object.assign(existingItem, refreshedItem);
+      continue;
+    }
+
+    const nextItem = normalizeQueueItem({
+      ...item,
+      boardId: resolveScheduleBoardId(item.boardId),
+      mode: getDefaultScheduleMode(),
+      status: hasRequiredQueueFields(item) ? "ready" : "draft"
+    });
+    queue.push(nextItem);
+    queueMap.set(nextItem.id, nextItem);
+    addedCount += 1;
+  }
+
+  const occupiedSlots = new Set(queue.filter((item) => item.scheduledAt).map((item) => item.scheduledAt as string));
+  const availableSlots = getUpcomingScheduleSlots(days, occupiedSlots);
+  let scheduledCount = 0;
+
+  for (const item of queue) {
+    if (!items.find((candidate) => candidate.id === item.id)) {
+      continue;
+    }
+
+    if (!isEligibleForScheduling(item)) {
+      continue;
+    }
+
+    const nextSlot = availableSlots.shift();
+
+    if (!nextSlot) {
+      break;
+    }
+
+    item.scheduledAt = nextSlot;
+    item.status = "scheduled";
+    item.mode = getDefaultScheduleMode();
+    item.errorMessage = undefined;
+    item.lastAttemptAt = undefined;
+    scheduledCount += 1;
+  }
+
+  const nextQueue = sortQueue(queue);
+  await writeStore(nextQueue);
+
+  return {
+    ...buildDashboard(nextQueue, undefined, `${addedCount} pins added from library, ${scheduledCount} scheduled.`),
+    addedCount,
+    scheduledCount
+  };
+}
+
+export async function replacePinterestScheduleQueue({ items, days = 7 }: AddItemsOptions) {
+  const queue = items.map((item) =>
+    normalizeQueueItem({
+      ...item,
+      boardId: resolveScheduleBoardId(item.boardId),
+      mode: getDefaultScheduleMode(),
+      status: hasRequiredQueueFields(item) ? "ready" : "draft",
+      scheduledAt: undefined,
+      publishedAt: undefined,
+      errorMessage: undefined,
+      lastAttemptAt: undefined
+    })
+  );
+
+  await writeStore(sortQueue(queue));
+  const dashboard = await fillPinterestSchedule({ days });
+
+  return {
+    ...dashboard,
+    replacedCount: queue.length
   } satisfies PinterestScheduleDashboard;
 }
 

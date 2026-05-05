@@ -40,6 +40,12 @@ export default function HomePage() {
             <Link className="button secondary" href="/pinterest-schedule">
               Ouvrir le scheduler
             </Link>
+            <Link className="button secondary" href="/pinterest-library">
+              Ouvrir la content library
+            </Link>
+            <Link className="button secondary" href="/pinterest-ops">
+              Ouvrir Pinterest Ops
+            </Link>
             <Link className="button primary" href="/privacy">
               Politique de confidentialité
             </Link>
@@ -81,6 +87,8 @@ export default function HomePage() {
           <div className="code">http://localhost:3301/pinterest-demo</div>
           <div className="code">http://localhost:3301/pinterest-launch</div>
           <div className="code">http://localhost:3301/pinterest-schedule</div>
+          <div className="code">http://localhost:3301/pinterest-library</div>
+          <div className="code">http://localhost:3301/pinterest-ops</div>
         </article>
 
         <article className="panel stack-card">
