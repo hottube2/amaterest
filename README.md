@@ -129,6 +129,30 @@ Checklist avant canary publish reel :
 - ne pas publier tant qu'une URL `/pinterest-launch/pin-*.jpg` publique renvoie la homepage ou du HTML
 - garder `PINTEREST_PUBLIC_BASE_URL=https://amaterest.pages.dev` pour les URLs image destinees a Pinterest
 
+## Cloudflare pre-live deployment check
+
+- verifier que Cloudflare Pages pointe sur la branche `main`
+- verifier que le root directory Cloudflare Pages est la racine du projet `amaterest`
+- redeployer depuis `Workers & Pages` -> `amaterest` -> `Deployments` -> `Retry deployment` / `Redeploy`
+- verifier que `https://amaterest.pages.dev/pinterest-launch/pin-01.jpg?v=5` repond avec `Content-Type: image/jpeg`
+- ne pas activer `PINTEREST_ENABLE_PUBLISH=true` tant que l'image publique ne repond pas `image/jpeg`
+
+Verification PowerShell :
+
+```powershell
+$r = Invoke-WebRequest -Uri "https://amaterest.pages.dev/pinterest-launch/pin-01.jpg?v=5" -Method Head -UseBasicParsing
+$r.StatusCode
+$r.Headers["Content-Type"]
+```
+
+Deploy hook optionnel, seulement si la variable existe localement :
+
+```powershell
+if ($env:CLOUDFLARE_PAGES_DEPLOY_HOOK_URL) {
+  Invoke-RestMethod -Method Post -Uri $env:CLOUDFLARE_PAGES_DEPLOY_HOOK_URL
+}
+```
+
 ## Tester les routes Pinterest
 
 Boards :

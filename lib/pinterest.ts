@@ -44,7 +44,20 @@ export type CreatePinInput = {
   link: string;
   imageUrl: string;
   altText?: string;
+  mediaSource?: PinterestMediaSource;
 };
+
+export type PinterestMediaSource =
+  | {
+      source_type: "image_url";
+      url: string;
+      is_standard?: boolean;
+    }
+  | {
+      source_type: "image_base64";
+      content_type: "image/jpeg" | "image/png" | "image/webp";
+      data: string;
+    };
 
 type PinterestFetchOptions = RequestInit & {
   accessToken?: string;
@@ -122,7 +135,7 @@ export async function getBoards(accessToken?: string) {
 }
 
 export async function createPin(
-  { boardId, title, description, link, imageUrl, altText }: CreatePinInput,
+  { boardId, title, description, link, imageUrl, altText, mediaSource }: CreatePinInput,
   accessToken?: string
 ) {
   return pinterestFetch<PinterestPin>("/pins", {
@@ -134,10 +147,13 @@ export async function createPin(
       description,
       link,
       alt_text: altText,
-      media_source: {
-        source_type: "image_url",
-        url: imageUrl
-      }
+      media_source:
+        mediaSource ||
+        {
+          source_type: "image_url",
+          url: imageUrl,
+          is_standard: true
+        }
     })
   });
 }

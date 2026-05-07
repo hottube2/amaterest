@@ -1,132 +1,78 @@
 {
   "version": 1,
   "products": {
-    "pantry_oxo_pop_5pc_01": {
-      "amazonAffiliateUrl": "https://amzn.to/3OIGCdn",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "pantry_oxo_steel_6pc_01": {
-      "amazonAffiliateUrl": "https://amzn.to/42Fv0Li",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "pantry_rubbermaid_brilliance_10pc_01": {
-      "amazonAffiliateUrl": "https://www.amazon.ca/dp/B0B1KRGD3Q/ref=cm_sw_r_as_gl_apa_gl_i_EKH9FJ8EW0JQDYAEJDQ5?linkCode=ml1&tag=amaterest-20&linkId=df6000f4ea08263e253152411e2c518f",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "pantry_rubbermaid_brilliance_20pc_01": {
-      "amazonAffiliateUrl": "https://amzn.to/3QTkEoB",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "pantry_progressive_prokeeper_6pc_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4tmrvVn",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "pantry_vtopmart_24pc_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4cADdGE",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
     "under_sink_yamazaki_pullout_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4sYGZP7",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "under_sink_yamazaki_pan_pot_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4t71OrE",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "under_sink_delamu_clear_2tier_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4cWq8Xa",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "under_sink_delamu_clear_4pc_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4cXI2ZB",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "under_sink_iris_drawer_2pack_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4cDoSJw",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "under_sink_iris_drawer_3pack_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4dcK0qc",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "entryway_songmics_bamboo_bench_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4ngYCsh",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "entryway_songmics_storage_bench_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4w2Pw6o",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "entryway_songmics_modern_bench_01": {
-      "amazonAffiliateUrl": "https://amzn.to/3P6K2qs",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "vanity_cq_acrylic_3pack_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4cS2XNI",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "vanity_bino_5drawer_01": {
-      "amazonAffiliateUrl": "https://amzn.to/4t1ECe8",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
+      "qaStatus": "failed",
+      "monetizationReady": false
     },
     "beauty_shark_flexstyle_hd430c_01": {
-      "amazonAffiliateUrl": "https://amzn.to/3P6KdC8",
-      "affiliateStatus": "final",
-      "qaStatus": "passed",
-      "monetizationReady": true
-    },
-    "closet_closetmaid_starter_kit_01": {
-      "amazonAffiliateUrl": "",
-      "affiliateStatus": "missing",
-      "qaStatus": "pending",
+      "qaStatus": "failed",
       "monetizationReady": false
     },
-    "closet_closetmaid_organizer_kit_01": {
-      "amazonAffiliateUrl": "",
-      "affiliateStatus": "missing",
-      "qaStatus": "pending",
+    "entryway_songmics_bamboo_bench_01": {
+      "qaStatus": "failed",
       "monetizationReady": false
     },
-    "closet_closetmaid_tower_drawers_01": {
-      "amazonAffiliateUrl": "",
-      "affiliateStatus": "missing",
-      "qaStatus": "pending",
+    "entryway_songmics_storage_bench_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "entryway_songmics_modern_bench_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "pantry_oxo_pop_5pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "under_sink_yamazaki_pan_pot_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "pantry_rubbermaid_brilliance_20pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "under_sink_delamu_clear_2tier_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "pantry_oxo_steel_6pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "pantry_rubbermaid_brilliance_10pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "pantry_vtopmart_24pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "pantry_progressive_prokeeper_6pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "under_sink_delamu_clear_4pc_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "vanity_cq_acrylic_3pack_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "vanity_bino_5drawer_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "under_sink_iris_drawer_3pack_01": {
+      "qaStatus": "failed",
+      "monetizationReady": false
+    },
+    "under_sink_iris_drawer_2pack_01": {
+      "qaStatus": "failed",
       "monetizationReady": false
     }
   },
-  "updatedAt": "2026-05-04T23:57:56.410Z"
+  "updatedAt": "2026-05-07T16:35:08.629Z"
 }

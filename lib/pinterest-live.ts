@@ -13,6 +13,9 @@ const STORE_VERSION = 1;
 
 export type PinterestPublishMode = "canary" | "live";
 export type PinterestPublishResult = "success" | "error" | "blocked" | "preview";
+export type PinterestCanaryTokenSource = "oauth_session" | "env" | "missing";
+export type PinterestCanaryScopeStatus = boolean | "unknown";
+export type PinterestCanaryMediaSourceType = "image_base64" | "image_url";
 
 export type PinterestPublishedPin = {
   internalPinId: string;
@@ -25,6 +28,9 @@ export type PinterestPublishedPin = {
   affiliateUrl?: string;
   imageUrl: string;
   imageAssetPath?: string;
+  mediaSourceType?: PinterestCanaryMediaSourceType;
+  imageFileExists?: boolean;
+  imageFileSizeBytes?: number;
   publishedAt: string;
   publishMode: PinterestPublishMode;
   result: PinterestPublishResult;
@@ -37,6 +43,12 @@ export type PinterestPublishedPin = {
   warnings?: string[];
   usesPublicBaseUrl?: boolean;
   publicBaseUrl?: string;
+  tokenSource?: PinterestCanaryTokenSource;
+  tokenHasWriteScopes?: PinterestCanaryScopeStatus;
+  availableScopes?: string[];
+  hasPinsWrite?: PinterestCanaryScopeStatus;
+  hasBoardsWrite?: PinterestCanaryScopeStatus;
+  tokenNote?: string;
   saves?: number;
   outboundClicks?: number;
   ctr?: number;
@@ -104,6 +116,24 @@ type CanaryCandidate = {
   category: string;
   usesPublicBaseUrl: boolean;
   publicBaseUrl?: string;
+  warnings: string[];
+};
+
+type CanaryTokenDiagnostics = {
+  accessToken?: string;
+  tokenSource: PinterestCanaryTokenSource;
+  tokenHasWriteScopes: PinterestCanaryScopeStatus;
+  availableScopes?: string[];
+  hasPinsWrite: PinterestCanaryScopeStatus;
+  hasBoardsWrite: PinterestCanaryScopeStatus;
+  tokenNote: string;
+};
+
+type CanaryMediaSourceDiagnostics = {
+  mediaSource: NonNullable<CreatePinInput["mediaSource"]>;
+  mediaSourceType: PinterestCanaryMediaSourceType;
+  imageFileExists: boolean;
+  imageFileSizeBytes: number;
   warnings: string[];
 };
 
@@ -181,6 +211,42 @@ function getAnalyticsLookbackDays() {
   return getNumberEnv(env.PINTEREST_ANALYTICS_LOOKBACK_DAYS, 30);
 }
 
+function buildCanaryTokenDiagnostics(accessToken?: string, sessionScopes: string[] = []): CanaryTokenDiagnostics {
+  if (accessToken) {
+    const hasPinsWrite = sessionScopes.includes("pins:write");
+    const hasBoardsWrite = sessionScopes.includes("boards:write");
+
+    return {
+      accessToken,
+      tokenSource: "oauth_session",
+      tokenHasWriteScopes: hasPinsWrite && hasBoardsWrite,
+      availableScopes: sessionScopes,
+      hasPinsWrite,
+      hasBoardsWrite,
+      tokenNote: "Using the Pinterest OAuth browser session token from the request cookie."
+    };
+  }
+
+  if (env.PINTEREST_ACCESS_TOKEN) {
+    return {
+      accessToken: env.PINTEREST_ACCESS_TOKEN,
+      tokenSource: "env",
+      tokenHasWriteScopes: "unknown",
+      hasPinsWrite: "unknown",
+      hasBoardsWrite: "unknown",
+      tokenNote: "No OAuth session cookie was available on this request; using PINTEREST_ACCESS_TOKEN fallback."
+    };
+  }
+
+  return {
+    tokenSource: "missing",
+    tokenHasWriteScopes: false,
+    hasPinsWrite: false,
+    hasBoardsWrite: false,
+    tokenNote: "No OAuth session cookie and no PINTEREST_ACCESS_TOKEN fallback were available."
+  };
+}
+
 function resolvePinterestCanaryBoardId(explicitBoardId?: string) {
   return (
     env.PINTEREST_CANARY_BOARD_ID ||
@@ -219,7 +285,8 @@ function isLocalhostUrl(value: string) {
 function buildCanaryImageDiagnostics(imageAssetPath: string) {
   const publicBaseUrl = normalizePublicBaseUrl();
   const warnings: string[] = [];
-  const imageUrl = publicBaseUrl ? new URL(imageAssetPath, `${publicBaseUrl}/`).toString() : imageAssetPath;
+  const publicImagePath = imageAssetPath.replace(/^\/+/, "");
+  const imageUrl = publicBaseUrl ? new URL(publicImagePath, `${publicBaseUrl}/`).toString() : imageAssetPath;
 
   if (!publicBaseUrl) {
     warnings.push("missing_public_base_url");
@@ -281,14 +348,89 @@ function validateCanaryCoherence(pin: CanaryCandidate) {
   return blockers;
 }
 
-function buildPayload(pin: CanaryCandidate, boardId: string): CreatePinInput {
+function resolvePublicAssetFilePath(imageAssetPath: string) {
+  if (!imageAssetPath.startsWith("/")) {
+    return undefined;
+  }
+
+  const publicDir = path.resolve(process.cwd(), "public");
+  const resolvedPath = path.resolve(publicDir, imageAssetPath.replace(/^\/+/, ""));
+  const isInsidePublicDir = resolvedPath === publicDir || resolvedPath.startsWith(`${publicDir}${path.sep}`);
+
+  return isInsidePublicDir ? resolvedPath : undefined;
+}
+
+function getImageContentType(imageAssetPath: string): "image/jpeg" | "image/png" | "image/webp" {
+  const extension = path.extname(imageAssetPath).toLowerCase();
+
+  if (extension === ".png") {
+    return "image/png";
+  }
+
+  if (extension === ".webp") {
+    return "image/webp";
+  }
+
+  return "image/jpeg";
+}
+
+function buildImageUrlMediaSource(pin: CanaryCandidate): CanaryMediaSourceDiagnostics {
+  return {
+    mediaSource: {
+      source_type: "image_url",
+      url: pin.imageUrl,
+      is_standard: true
+    },
+    mediaSourceType: "image_url",
+    imageFileExists: false,
+    imageFileSizeBytes: 0,
+    warnings: ["image_base64_unavailable"]
+  };
+}
+
+async function buildCanaryMediaSource(pin: CanaryCandidate): Promise<CanaryMediaSourceDiagnostics> {
+  const imageFilePath = resolvePublicAssetFilePath(pin.imageAssetPath);
+
+  if (!imageFilePath) {
+    return buildImageUrlMediaSource(pin);
+  }
+
+  try {
+    const buffer = await fs.readFile(imageFilePath);
+
+    if (buffer.byteLength === 0) {
+      return {
+        ...buildImageUrlMediaSource(pin),
+        imageFileExists: true,
+        warnings: ["empty_local_image", "image_base64_unavailable"]
+      };
+    }
+
+    return {
+      mediaSource: {
+        source_type: "image_base64",
+        content_type: getImageContentType(pin.imageAssetPath),
+        data: buffer.toString("base64")
+      },
+      mediaSourceType: "image_base64",
+      imageFileExists: true,
+      imageFileSizeBytes: buffer.byteLength,
+      warnings: []
+    };
+  } catch {
+    return buildImageUrlMediaSource(pin);
+  }
+}
+
+function buildPayload(pin: CanaryCandidate, boardId: string, mediaSource: CreatePinInput["mediaSource"]): CreatePinInput {
   return {
     boardId,
     title: pin.title,
     description: pin.description,
     link: pin.link,
     imageUrl: pin.imageUrl,
-    altText: pin.internalTitle
+    altText: pin.internalTitle,
+    mediaSource
   };
 }
 
@@ -296,20 +438,7 @@ function isValidBoardId(boardId: string) {
   return /^\d+$/.test(boardId);
 }
 
-async function hasValidLocalImage(pin: CanaryCandidate) {
-  if (!pin.imageAssetPath.startsWith("/")) {
-    return true;
-  }
-
-  try {
-    await fs.access(path.join(process.cwd(), "public", pin.imageAssetPath.replace(/^\/+/, "")));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function validatePublishReady(pin: CanaryCandidate, boardId: string) {
+function validatePublishReady(pin: CanaryCandidate, boardId: string, media: CanaryMediaSourceDiagnostics) {
   const blockers: string[] = [];
 
   if (!pin.link) {
@@ -322,20 +451,26 @@ async function validatePublishReady(pin: CanaryCandidate, boardId: string) {
     blockers.push("invalid_affiliate_url");
   }
 
-  if (!pin.imageUrl) {
-    blockers.push("missing_image_url");
-  }
+  if (media.mediaSourceType === "image_base64") {
+    if (!media.imageFileExists) {
+      blockers.push(`missing_local_image:${pin.imageAssetPath}`);
+    }
 
-  if (!pin.usesPublicBaseUrl) {
-    blockers.push("missing_public_base_url");
-  }
+    if (media.imageFileSizeBytes <= 0) {
+      blockers.push(`empty_local_image:${pin.imageAssetPath}`);
+    }
+  } else {
+    if (!pin.imageUrl) {
+      blockers.push("missing_image_url");
+    }
 
-  if (isLocalhostUrl(pin.imageUrl)) {
-    blockers.push("localhost_image_url");
-  }
+    if (!pin.usesPublicBaseUrl) {
+      blockers.push("missing_public_base_url");
+    }
 
-  if (!(await hasValidLocalImage(pin))) {
-    blockers.push(`missing_local_image:${pin.imageAssetPath}`);
+    if (isLocalhostUrl(pin.imageUrl)) {
+      blockers.push("localhost_image_url");
+    }
   }
 
   if (!boardId || !isValidBoardId(boardId)) {
@@ -403,7 +538,7 @@ async function findCanaryPin(origin: string, store: Store, internalPinId?: strin
   );
   const publishedIds = new Set(
     store.items
-      .filter((item) => item.result === "success")
+      .filter(isStoredPublishedPin)
       .map((item) => item.internalPinId)
   );
 
@@ -534,6 +669,10 @@ function sortPublished(items: PinterestPublishedPin[]) {
   return [...items].sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
 }
 
+function isStoredPublishedPin(item: PinterestPublishedPin) {
+  return Boolean(item.pinterestPinId || (item.result as string) === "published");
+}
+
 export async function listPinterestPublishedPins() {
   const store = await readStore();
   return sortPublished(store.items.map(applyWinnerRules));
@@ -551,6 +690,7 @@ export async function runPinterestCanaryPublish({
   const requestedBoardId = resolvePinterestCanaryBoardId(boardId);
   const store = await readStore();
   const liveLimit = getLivePublishLimit();
+  const token = buildCanaryTokenDiagnostics(accessToken, sessionScopes);
   const lookup = await findCanaryPin(origin, store, internalPinId);
   const pin = lookup.pin;
 
@@ -559,9 +699,10 @@ export async function runPinterestCanaryPublish({
   }
 
   const existingCanaryCount = store.items.filter(
-    (item) => item.publishMode === "canary" && item.result === "success"
+    (item) => item.publishMode === "canary" && isStoredPublishedPin(item)
   ).length;
-  const validationBlockers = await validatePublishReady(pin, requestedBoardId);
+  const media = await buildCanaryMediaSource(pin);
+  const validationBlockers = validatePublishReady(pin, requestedBoardId, media);
   const liveBlockers: string[] = [];
 
   if (!publishEnabled) {
@@ -576,6 +717,30 @@ export async function runPinterestCanaryPublish({
     liveBlockers.push("canary_limit_reached");
   }
 
+  if (token.tokenSource === "missing") {
+    liveBlockers.push("missing_access_token");
+  }
+
+  if (token.tokenSource === "oauth_session" && token.tokenHasWriteScopes !== true) {
+    liveBlockers.push("missing_write_scopes");
+  }
+
+  const tokenRecord = {
+    tokenSource: token.tokenSource,
+    tokenHasWriteScopes: token.tokenHasWriteScopes,
+    availableScopes: token.availableScopes,
+    hasPinsWrite: token.hasPinsWrite,
+    hasBoardsWrite: token.hasBoardsWrite,
+    tokenNote: token.tokenNote
+  };
+  const diagnosticsRecord = {
+    mediaSourceType: media.mediaSourceType,
+    imageFileExists: media.imageFileExists,
+    imageFileSizeBytes: media.imageFileSizeBytes,
+    warnings: [...pin.warnings, ...media.warnings],
+    ...tokenRecord
+  };
+
   if (dryRun) {
     return buildPublishedRecord(pin, requestedBoardId, "canary", {
       result: "preview",
@@ -583,7 +748,8 @@ export async function runPinterestCanaryPublish({
       validationOk: validationBlockers.length === 0,
       canPublishLive: validationBlockers.length === 0 && liveBlockers.length === 0,
       blockers: validationBlockers,
-      liveBlockers
+      liveBlockers,
+      ...diagnosticsRecord
     });
   }
 
@@ -594,6 +760,7 @@ export async function runPinterestCanaryPublish({
       canPublishLive: false,
       blockers: validationBlockers,
       liveBlockers,
+      ...diagnosticsRecord,
       errorMessage: `invalid_live_publish_limit: PINTEREST_LIVE_PUBLISH_LIMIT must be 1 for canary publish. Current value: ${liveLimit}.`
     });
     await writeStore(sortPublished([blockedRecord, ...store.items]));
@@ -607,6 +774,7 @@ export async function runPinterestCanaryPublish({
       canPublishLive: false,
       blockers: validationBlockers,
       liveBlockers,
+      ...diagnosticsRecord,
       errorMessage: `PINTEREST_LIVE_PUBLISH_LIMIT=${liveLimit}. Canary publish refused to prevent accidental volume.`
     });
     await writeStore(sortPublished([blockedRecord, ...store.items]));
@@ -620,6 +788,7 @@ export async function runPinterestCanaryPublish({
       canPublishLive: false,
       blockers: validationBlockers,
       liveBlockers,
+      ...diagnosticsRecord,
       errorMessage: "publish_disabled: PINTEREST_ENABLE_PUBLISH=false. Canary publish refused before calling Pinterest."
     });
     await writeStore(sortPublished([blockedRecord, ...store.items]));
@@ -627,7 +796,7 @@ export async function runPinterestCanaryPublish({
   }
 
   const missingWriteScopes =
-    accessToken
+    token.tokenSource === "oauth_session"
       ? getMissingPinterestDemoScopes(sessionScopes).filter((scope) => scope === "boards:write" || scope === "pins:write")
       : [];
 
@@ -638,6 +807,7 @@ export async function runPinterestCanaryPublish({
       canPublishLive: false,
       blockers: validationBlockers,
       liveBlockers: [...liveBlockers, "missing_write_scopes"],
+      ...diagnosticsRecord,
       errorMessage: `Pinterest OAuth token is missing required write scopes: ${missingWriteScopes.join(", ")}.`
     });
     await writeStore(sortPublished([blockedRecord, ...store.items]));
@@ -651,6 +821,7 @@ export async function runPinterestCanaryPublish({
       canPublishLive: false,
       blockers: validationBlockers,
       liveBlockers,
+      ...diagnosticsRecord,
       errorMessage: validationBlockers.join(", ")
     });
     await writeStore(sortPublished([blockedRecord, ...store.items]));
@@ -658,14 +829,29 @@ export async function runPinterestCanaryPublish({
   }
 
   try {
-    const remotePin = await createPin(buildPayload(pin, requestedBoardId), accessToken);
+    if (!token.accessToken) {
+      const blockedRecord = buildPublishedRecord(pin, requestedBoardId, "canary", {
+        result: "blocked",
+        validationOk: validationBlockers.length === 0,
+        canPublishLive: false,
+        blockers: validationBlockers,
+        liveBlockers,
+        ...diagnosticsRecord,
+        errorMessage: "missing_access_token: connect Pinterest in the browser or configure PINTEREST_ACCESS_TOKEN."
+      });
+      await writeStore(sortPublished([blockedRecord, ...store.items]));
+      return blockedRecord;
+    }
+
+    const remotePin = await createPin(buildPayload(pin, requestedBoardId, media.mediaSource), token.accessToken);
     const record = buildPublishedRecord(pin, requestedBoardId, "canary", {
       pinterestPinId: remotePin.id,
       result: "success",
       validationOk: true,
       canPublishLive: true,
       blockers: [],
-      liveBlockers: []
+      liveBlockers: [],
+      ...diagnosticsRecord
     });
 
     await writeStore(sortPublished([record, ...store.items]));
@@ -677,6 +863,7 @@ export async function runPinterestCanaryPublish({
       canPublishLive: false,
       blockers: [],
       liveBlockers,
+      ...diagnosticsRecord,
       errorMessage: error instanceof Error ? error.message : "Pinterest publish failed."
     });
 

@@ -40,10 +40,21 @@ type PublishedPin = {
   description: string;
   link: string;
   imageUrl: string;
+  imageAssetPath?: string;
+  mediaSourceType?: "image_base64" | "image_url";
+  imageFileExists?: boolean;
+  imageFileSizeBytes?: number;
   publishedAt: string;
   publishMode: "canary" | "live";
   result: "success" | "error" | "blocked" | "preview";
   errorMessage?: string;
+  tokenSource?: "oauth_session" | "env" | "missing";
+  tokenHasWriteScopes?: boolean | "unknown";
+  availableScopes?: string[];
+  hasPinsWrite?: boolean | "unknown";
+  hasBoardsWrite?: boolean | "unknown";
+  liveBlockers?: string[];
+  tokenNote?: string;
 };
 
 type CanaryPayload = {
@@ -126,7 +137,16 @@ export default function PinterestOpsClient({
     setMessage(null);
 
     try {
-      const response = await fetch("/api/pinterest/publish/canary", { method: "POST" });
+      const response = await fetch("/api/pinterest/publish/canary", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          pinId: "lib-pantry_oxo_pop_5pc_01-before-after"
+        })
+      });
       const payload = (await response.json()) as { ok: boolean; error?: string; publication?: PublishedPin };
       await Promise.all([refreshSummary(), refreshCanary()]);
 
@@ -135,11 +155,23 @@ export default function PinterestOpsClient({
       }
 
       if (payload.publication.result !== "success") {
-        setMessage(payload.publication.errorMessage || payload.error || "Canary publish bloque.");
+        const tokenDetails = payload.publication.tokenSource
+          ? ` tokenSource=${payload.publication.tokenSource}, hasPinsWrite=${String(payload.publication.hasPinsWrite)}, hasBoardsWrite=${String(payload.publication.hasBoardsWrite)}`
+          : "";
+        const mediaDetails = payload.publication.mediaSourceType
+          ? ` mediaSourceType=${payload.publication.mediaSourceType}, imageFileExists=${String(
+              payload.publication.imageFileExists
+            )}, imageFileSizeBytes=${payload.publication.imageFileSizeBytes ?? 0}`
+          : "";
+        setMessage(`${payload.publication.errorMessage || payload.error || "Canary publish bloque."}${tokenDetails}${mediaDetails}`);
         return;
       }
 
-      setMessage(`Canary published: ${payload.publication.pinterestPinId || payload.publication.internalPinId}`);
+      setMessage(
+        `Canary published: ${payload.publication.pinterestPinId || payload.publication.internalPinId} tokenSource=${
+          payload.publication.tokenSource || "unknown"
+        } mediaSourceType=${payload.publication.mediaSourceType || "unknown"}`
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Erreur canary");
     } finally {
@@ -269,13 +301,17 @@ export default function PinterestOpsClient({
         </div>
         <div className="actions" style={{ marginTop: 10 }}>
           <button className="button primary" type="button" disabled={busy !== null} onClick={() => void runCanaryPublish()}>
-            Canary publish 1 pin
+            Publish 1 canary pin
           </button>
         </div>
         {canary.lastCanary ? (
           <p className="subtle">
             Last canary: {canary.lastCanary.result} - {canary.lastCanary.pinterestPinId || canary.lastCanary.internalPinId}
             {canary.lastCanary.errorMessage ? ` - ${canary.lastCanary.errorMessage}` : ""}
+            {canary.lastCanary.tokenSource ? ` - tokenSource=${canary.lastCanary.tokenSource}` : ""}
+            {canary.lastCanary.mediaSourceType ? ` - mediaSourceType=${canary.lastCanary.mediaSourceType}` : ""}
+            {typeof canary.lastCanary.imageFileExists === "boolean" ? ` - imageFileExists=${String(canary.lastCanary.imageFileExists)}` : ""}
+            {typeof canary.lastCanary.imageFileSizeBytes === "number" ? ` - imageFileSizeBytes=${canary.lastCanary.imageFileSizeBytes}` : ""}
           </p>
         ) : (
           <p className="subtle">No canary attempt stored yet.</p>
